@@ -2,6 +2,7 @@
   (:require [clojure.string :as str]))
 
 (declare input)
+(declare sample-input)
 
 (defn process-input [input]
   (let [lines (str/split-lines input)
@@ -11,7 +12,12 @@
     {:left (map first pairs)
      :right (map last pairs)}))
 
-(defn solve-day-1 [input]
+(defn get-frequency [value coll]
+  (->> coll
+       (filter #(== % value))
+       (count)))
+
+(defn solve-day-1-pt1 [input]
   (let [lists (process-input input)
         left-sorted (sort (:left lists))
         right-sorted (sort (:right lists))
@@ -19,7 +25,19 @@
                    (map abs))]
     (reduce + dists)))
 
-(solve-day-1 input)
+(defn solve-day-1-pt2 [input]
+  (let [lists (process-input input)
+        sims (map #(* % (get-frequency % (:right lists))) (:left lists))]
+    (reduce + sims)))
+
+(solve-day-1-pt2 input)
+
+(def sample-input "3   4
+4   3
+2   5
+1   3
+3   9
+3   3")
 
 (def input "80421   40193
 69841   31045
