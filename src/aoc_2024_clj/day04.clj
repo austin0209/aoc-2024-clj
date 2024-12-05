@@ -58,8 +58,30 @@ MXMXAXMASX")
                        (find-xmas-from-dir letters % [0 -1])
                        (find-xmas-from-dir letters % [0 1])) all-pos))))
 
+(defn find-x-mas-from-pos [letters pos]
+  (cond
+    (not= \A (get-letter letters pos)) 0
+    (and (or (and (= \M (get-letter letters (map + pos [1 1])))
+                  (= \S (get-letter letters (map + pos [-1 -1]))))
+             (and (= \S (get-letter letters (map + pos [1 1])))
+                  (= \M (get-letter letters (map + pos [-1 -1])))))
+         (or (and (= \M (get-letter letters (map + pos [1 -1])))
+                  (= \S (get-letter letters (map + pos [-1 1]))))
+             (and (= \S (get-letter letters (map + pos [1 -1])))
+                  (= \M (get-letter letters (map + pos [-1 1])))))) 1
+    :else 0))
+
+(defn find-all-x-mas [letters]
+  (let [all-pos (for [x (range (count (first letters)))
+                      y (range (count letters))]
+                  [x y])]
+    (reduce + (map #(find-x-mas-from-pos letters %) all-pos))))
+
 ;; Part 1
 (find-all-xmas (parse-input input))
+
+;; Part 2
+(find-all-x-mas (parse-input input))
 
 (def input "XMXMAXXSXSSMMMXAMXMMMAMXMAMXAMSAMXSAMXMXMMMAXXMASMSMSAMXMSMMMAMXMXAMMAMMMXMAMMMMMAMMMMSAMXMMAMXAXMXMAMXSXSMMSMMMMSMMXXAMSMSASAXMMMSMMMSMASMM
 MSMSMSMXMMAASAMXMASMMXSSMSSMSMMXXSAMXMXMXMSMMXMMMAAXXAAAMXSSSMAAXSXSMSASXMMSMMAAMAMXMASMSASASXMASMMSMSAMMASXAXAASAAMAMSXMAXAMAMSAXAAMASMAMAM
