@@ -61,22 +61,43 @@
         front-pos (get-front-pos pos facing)
         obstacle-in-front (contains? (:obstructions state) front-pos)
         new-facing (if obstacle-in-front (rotate-90 facing) facing)
-        new-pos (get-front-pos pos new-facing)]
+        new-pos (if obstacle-in-front pos front-pos)]
     (-> state
         (assoc :guard-pos (if (in-bounds? state new-pos) new-pos nil))
         (assoc :guard-facing new-facing))))
 
-(defn unique-pos-count [state]
+(defn unique-positions [state]
   (loop [positions #{}
          curr-state state]
     (if (nil? (:guard-pos curr-state))
-      (count positions)
+      positions
       (recur (conj positions (:guard-pos curr-state)) (tick curr-state)))))
+
+(defn is-loop? [state]
+  (loop [guard-states #{}
+         curr-state (tick state)]
+    (let [{pos :guard-pos facing :guard-facing} curr-state
+          new-guard-state {:guard-pos pos
+                           :guard-facing facing}]
+      (cond
+        (nil? pos) false ; Guard left map, this is not a loop.
+        (contains? guard-states new-guard-state) true
+        :else (recur (conj guard-states new-guard-state) (tick curr-state))))))
+
+(defn all-loop-states [state]
+  (let [obs (:obstructions state)
+        tries (for [t (unique-positions state)
+                    :when (not= t (:guard-pos state))]
+                (assoc state :obstructions (conj obs t)))
+        states (pmap #(when (is-loop? %) %) tries)]
+    (filter some? states)))
 
 ;; Part 1
 (declare input)
-(unique-pos-count (parse-input input))
+(count (unique-positions (parse-input input)))
 
+;; Part 2
+(count (all-loop-states (parse-input input)))
 
 (def input "............#...........................................#.......#.............#...........#.......................................
 ..........#....................#.........................................#............#............#.....##...................#...
