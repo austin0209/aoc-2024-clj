@@ -4,13 +4,13 @@
 
 (defn- get-obstructions [flat width]
   (loop [last-idx 0
-         ans #{}]
+         ans (transient #{})]
     (let [idx (str/index-of flat \# (+ 1 last-idx))]
       (if (nil? idx)
-        ans
+        (persistent! ans)
         (let [x (mod idx width)
               y (long (Math/floor (/ idx width)))]
-          (recur idx (conj ans [x y])))))))
+          (recur idx (conj! ans [x y])))))))
 
 (defn parse-input [input]
   (let [split (str/split-lines input)
@@ -57,14 +57,14 @@
         (assoc :guard-facing new-facing))))
 
 (defn unique-positions [state]
-  (loop [positions #{}
+  (loop [positions (transient #{})
          curr-state state]
     (if (nil? (:guard-pos curr-state))
-      positions
-      (recur (conj positions (:guard-pos curr-state)) (tick curr-state)))))
+      (persistent! positions)
+      (recur (conj! positions (:guard-pos curr-state)) (tick curr-state)))))
 
 (defn is-loop? [state]
-  (loop [guard-states #{}
+  (loop [guard-states (transient #{})
          curr-state (tick state)]
     (let [{pos :guard-pos facing :guard-facing} curr-state
           new-guard-state {:guard-pos pos
@@ -72,7 +72,7 @@
       (cond
         (nil? pos) false ; Guard left map, this is not a loop.
         (contains? guard-states new-guard-state) true
-        :else (recur (conj guard-states new-guard-state) (tick curr-state))))))
+        :else (recur (conj! guard-states new-guard-state) (tick curr-state))))))
 
 (defn all-loop-states [state]
   (let [obs (:obstructions state)
