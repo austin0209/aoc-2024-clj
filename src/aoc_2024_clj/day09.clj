@@ -2,17 +2,14 @@
   (:require [aoc-2024-clj.input.day09 :as in]))
 
 (defn parse-input [input]
-  (loop [res ""
+  (loop [res []
          idx 0]
-    (cond
-      (= idx (count input)) (vec res)
-      (even? idx) (let [block-count (Long/parseLong (str (nth input idx)))
-                        id (long (/ idx 2))
-                        blocks (for [_ (range block-count)] id)]
-                    (recur (vec (concat res blocks)) (inc idx)))
-      (odd? idx) (let [block-count (Long/parseLong (str (nth input idx)))
-                       block-str (for [_ (range block-count)] nil)]
-                   (recur (vec (concat res block-str)) (inc idx))))))
+    (if (= idx (count input))
+      res
+      (let [block-count (Long/parseLong (str (nth input idx)))
+            id (if (even? idx) (long (/ idx 2)) nil)
+            blocks (for [_ (range block-count)] id)]
+        (recur (apply conj res blocks) (inc idx))))))
 
 (defn has-gaps? [blocks]
   (loop [idx 0
@@ -34,25 +31,32 @@
       :else (recur (inc idx) start-found))))
 
 (defn next-free-idx [blocks]
-  (first (keep-indexed #(when (nil? %2) %1) blocks)))
+  (loop [idx 0]
+    (let [id (nth blocks idx)]
+      (if (nil? id)
+        idx
+        (recur (inc idx))))))
 
 (defn compact [init-blocks]
   (loop [move-queue (-> (keep-indexed
                          #(if (nil? %2) nil {:pos %1 :id %2})
                          init-blocks)
                         (reverse))
-         res init-blocks]
+         res (transient init-blocks)]
     (if (not (has-gaps? res))
-      res
+      (persistent! res)
       (let [to-move (first move-queue)
             id (:id to-move)
             free-idx (next-free-idx res)]
-        (recur (rest move-queue) (-> (assoc res free-idx id)
-                                     (assoc (:pos to-move) nil)))))))
+        (recur (rest move-queue) (-> (assoc! res free-idx id)
+                                     (assoc! (:pos to-move) nil)))))))
+
+(require '[com.clojure-goes-fast/clj-async-profiler :as prof])
+(prof/profile (compact (parse-input in/input)))
 
 ;; Part 1
-(->> (parse-input in/input)
-     (compact)
-     (filter some?)
-     (map-indexed vector)
-     (reduce #(+ %1 (apply * %2)) 0))
+(comment (->> (parse-input in/input)
+              (compact)
+              (filter some?)
+              (map-indexed vector)
+              (reduce #(+ %1 (apply * %2)) 0)))
